@@ -1,0 +1,19 @@
+{
+  "name": "wager",
+  "version": "1.0.0",
+  "description": "Custom project based on the Morph Starter Kit.",
+  "author": "Morph",
+  "license": "MIT",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morph-l2/morph_starter_kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ernesto-tha-great/morph_starter_kit/issues"
+  },
+  "keywords": [
+    "morph",
+    "morph_starter_kit"
+  ]
+}
