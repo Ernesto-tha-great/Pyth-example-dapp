@@ -1,4 +1,4 @@
 import { wagerAbi } from "./abi";
-const wagerAddress = "0x09Bd335EE3eDe2ba437C2E65957f1a656fE271e2";
+const wagerAddress = "0xf9c8655845232420430C946Ff52b056663D1A653";
 
 export { wagerAbi, wagerAddress };

@@ -2,43 +2,45 @@ export const wagerAbi = [
   { type: "constructor", inputs: [], stateMutability: "nonpayable" },
   {
     type: "function",
-    name: "betThreshold",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
     name: "bets",
-    inputs: [{ name: "", type: "address", internalType: "address" }],
+    inputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     outputs: [
-      { name: "amount", type: "uint256", internalType: "uint256" },
-      { name: "betForExceed", type: "bool", internalType: "bool" },
+      { name: "id", type: "uint256", internalType: "uint256" },
+      { name: "title", type: "string", internalType: "string" },
+      { name: "threshold", type: "uint256", internalType: "uint256" },
+      {
+        name: "totalPoolForExceed",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "totalPoolForNotExceed",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      { name: "epochEnded", type: "bool", internalType: "bool" },
     ],
     stateMutability: "view",
   },
   {
     type: "function",
-    name: "bettors",
-    inputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    outputs: [{ name: "", type: "address", internalType: "address" }],
-    stateMutability: "view",
+    name: "createBet",
+    inputs: [
+      { name: "title", type: "string", internalType: "string" },
+      { name: "threshold", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
     name: "endEpoch",
     inputs: [
+      { name: "betId", type: "uint256", internalType: "uint256" },
       { name: "pythPriceUpdate", type: "bytes[]", internalType: "bytes[]" },
     ],
     outputs: [],
     stateMutability: "payable",
-  },
-  {
-    type: "function",
-    name: "epochEnded",
-    inputs: [],
-    outputs: [{ name: "", type: "bool", internalType: "bool" }],
-    stateMutability: "view",
   },
   {
     type: "function",
@@ -49,35 +51,77 @@ export const wagerAbi = [
   },
   {
     type: "function",
+    name: "getAllBets",
+    inputs: [],
+    outputs: [
+      {
+        name: "",
+        type: "tuple[]",
+        internalType: "struct EthBettingDapp.BetInfo[]",
+        components: [
+          { name: "id", type: "uint256", internalType: "uint256" },
+          { name: "title", type: "string", internalType: "string" },
+          { name: "threshold", type: "uint256", internalType: "uint256" },
+          {
+            name: "totalPoolForExceed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "totalPoolForNotExceed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "epochEnded", type: "bool", internalType: "bool" },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "getBetAmount",
-    inputs: [{ name: "user", type: "address", internalType: "address" }],
+    inputs: [
+      { name: "betId", type: "uint256", internalType: "uint256" },
+      { name: "user", type: "address", internalType: "address" },
+    ],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "getBetPosition",
-    inputs: [{ name: "user", type: "address", internalType: "address" }],
+    inputs: [
+      { name: "betId", type: "uint256", internalType: "uint256" },
+      { name: "user", type: "address", internalType: "address" },
+    ],
     outputs: [{ name: "", type: "bool", internalType: "bool" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "getBettors",
-    inputs: [],
+    inputs: [{ name: "betId", type: "uint256", internalType: "uint256" }],
     outputs: [{ name: "", type: "address[]", internalType: "address[]" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "getTotalPoolForExceed",
-    inputs: [],
+    inputs: [{ name: "betId", type: "uint256", internalType: "uint256" }],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "getTotalPoolForNotExceed",
+    inputs: [{ name: "betId", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "nextBetId",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view",
@@ -85,7 +129,10 @@ export const wagerAbi = [
   {
     type: "function",
     name: "placeBet",
-    inputs: [{ name: "_betForExceed", type: "bool", internalType: "bool" }],
+    inputs: [
+      { name: "betId", type: "uint256", internalType: "uint256" },
+      { name: "_betForExceed", type: "bool", internalType: "bool" },
+    ],
     outputs: [],
     stateMutability: "payable",
   },
@@ -97,23 +144,40 @@ export const wagerAbi = [
     stateMutability: "view",
   },
   {
-    type: "function",
-    name: "totalPoolForExceed",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    type: "function",
-    name: "totalPoolForNotExceed",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view",
+    type: "event",
+    name: "BetCreated",
+    inputs: [
+      {
+        name: "betId",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+      {
+        name: "title",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "threshold",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
   },
   {
     type: "event",
     name: "BetPlaced",
     inputs: [
+      {
+        name: "betId",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
       {
         name: "user",
         type: "address",
@@ -140,6 +204,12 @@ export const wagerAbi = [
     name: "EpochEnded",
     inputs: [
       {
+        name: "betId",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+      {
         name: "finalPrice",
         type: "uint256",
         indexed: false,
@@ -150,6 +220,25 @@ export const wagerAbi = [
         type: "bool",
         indexed: false,
         internalType: "bool",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "RewardTransferred",
+    inputs: [
+      {
+        name: "bettor",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "reward",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
       },
     ],
     anonymous: false,
