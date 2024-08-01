@@ -23,6 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import BetCard from "@/components/BetCard";
 
 interface BetInfo {
   id: bigint;
@@ -34,12 +35,6 @@ interface BetInfo {
 }
 
 export default function Home() {
-  // const { address } = useAccount();
-  // const [title, setTitle] = useState("");
-  // const [userBetAmount, setUserBetAmount] = useState("0");
-  // const [totalBetAmount, setTotalBetAmount] = useState("0");
-  // const [bettors, setBettors] = useState<string[]>([]);
-
   const { address } = useAccount();
   const [betId, setBetId] = useState<number>(0);
   const [betAmount, setBetAmount] = useState<string>("");
@@ -119,6 +114,7 @@ export default function Home() {
     betAmount: string
   ) => {
     try {
+      console.log(betId, betForExceed, betAmount, "yess");
       const bet = parseEther(betAmount);
       const placeBetTx = await writeContractAsync({
         address: wagerAddress,
@@ -135,7 +131,7 @@ export default function Home() {
     }
   };
 
-  const endEpoch = async () => {
+  const endEpoch = async (betId: number) => {
     const connection = new EvmPriceServiceConnection(
       "https://hermes.pyth.network"
     );
@@ -151,12 +147,12 @@ export default function Home() {
     console.log("yoo", priceFeedUpdateData);
 
     try {
-      const feeAmount = parseEther("0.001");
+      const feeAmount = parseEther("0.01");
       const endEpochTx = await writeContractAsync({
         address: wagerAddress,
         abi: wagerAbi,
         functionName: "endEpoch",
-        args: [priceFeedUpdateData as any],
+        args: [betId, priceFeedUpdateData as any],
         value: feeAmount,
       });
 
@@ -231,7 +227,7 @@ export default function Home() {
         </Form>
       </div>
 
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <h2 className="text-xl font-semibold">Place a Bet</h2>
         <input
           type="number"
@@ -268,26 +264,19 @@ export default function Home() {
         >
           End Epoch
         </button>
-      </div>
+      </div> */}
 
       <div className="mb-4">
         <h2 className="text-xl font-semibold">All Bets</h2>
         {allBets ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allBets.map((bet) => (
-              <div key={bet.id.toString()} className="border p-4 rounded">
-                <h3 className="font-bold">{bet.title}</h3>
-                <p>ID: {bet.id.toString()}</p>
-                <p>Threshold: {formatEther(bet.threshold)} ETH</p>
-                <p>
-                  Pool for Exceed: {formatEther(bet.totalPoolForExceed)} ETH
-                </p>
-                <p>
-                  Pool for Not Exceed: {formatEther(bet.totalPoolForNotExceed)}{" "}
-                  ETH
-                </p>
-                <p>Status: {bet.epochEnded ? "Ended" : "Active"}</p>
-              </div>
+              <BetCard
+                bet={bet}
+                key={bet.id.toString()}
+                onPlaceBet={placeBet}
+                onEndEpoch={endEpoch}
+              />
             ))}
           </div>
         ) : (
