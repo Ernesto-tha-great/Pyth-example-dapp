@@ -1,12 +1,60 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { wagerAbi, wagerAddress } from "@/constants";
 import { toast } from "sonner";
-import { parseUnits, parseEther } from "viem";
+import { parseUnits, parseEther, formatEther } from "viem";
 import { EvmPriceServiceConnection } from "@pythnetwork/pyth-evm-js";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  useWaitForTransactionReceipt,
+  useWriteContract,
+  useReadContract,
+  useAccount,
+} from "wagmi";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import BetCard from "@/components/BetCard";
+
+interface BetInfo {
+  id: bigint;
+  title: string;
+  threshold: bigint;
+  totalPoolForExceed: bigint;
+  totalPoolForNotExceed: bigint;
+  epochEnded: boolean;
+}
 
 export default function Home() {
+  const { address } = useAccount();
+  const [betId, setBetId] = useState<number>(0);
+  const [betAmount, setBetAmount] = useState<string>("");
+  const [betForExceed, setBetForExceed] = useState<boolean>(true);
+  const [newBetTitle, setNewBetTitle] = useState<string>("");
+  const [newBetThreshold, setNewBetThreshold] = useState<string>("");
+
+  const formSchema = z.object({
+    title: z.string(),
+    threshold: z.string(),
+  });
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      threshold: "",
+    },
+  });
+
   const {
     data: hash,
     error,
@@ -38,25 +86,52 @@ export default function Home() {
     }
   }, [isConfirming, isConfirmed, error, hash]);
 
-  const PlaceBet = async (betForExceed: boolean) => {
+  const { data: allBets } = useReadContract({
+    abi: wagerAbi,
+    address: wagerAddress,
+    functionName: "getAllBets",
+  }) as { data: BetInfo[] | undefined };
+
+  const createBet = async (data: z.infer<typeof formSchema>) => {
     try {
-      const betAmount = parseEther("0.0001");
-      const placeBetTx = await writeContractAsync({
+      const createBetTx = await writeContractAsync({
         address: wagerAddress,
         abi: wagerAbi,
-        functionName: "placeBet",
-        args: [betForExceed],
-        value: betAmount,
+        functionName: "createBet",
+        args: [data.title, data.threshold],
       });
 
-      console.log("property transaction hash:", placeBetTx);
+      console.log("created wager hash:", createBetTx);
     } catch (err: any) {
       toast.error("Transaction Failed: " + err.message);
       console.log("Transaction Failed: " + err.message);
     }
   };
 
-  const endEpoch = async () => {
+  const placeBet = async (
+    betId: number,
+    betForExceed: boolean,
+    betAmount: string
+  ) => {
+    try {
+      console.log(betId, betForExceed, betAmount, "yess");
+      const bet = parseEther(betAmount);
+      const placeBetTx = await writeContractAsync({
+        address: wagerAddress,
+        abi: wagerAbi,
+        functionName: "placeBet",
+        args: [betId, betForExceed],
+        value: bet,
+      });
+
+      console.log("Bet placed hash:", placeBetTx);
+    } catch (err: any) {
+      toast.error("Transaction Failed: " + err.message);
+      console.log("Transaction Failed: " + err.message);
+    }
+  };
+
+  const endEpoch = async (betId: number) => {
     const connection = new EvmPriceServiceConnection(
       "https://hermes.pyth.network"
     );
@@ -72,16 +147,16 @@ export default function Home() {
     console.log("yoo", priceFeedUpdateData);
 
     try {
-      const feeAmount = parseEther("0.001");
+      const feeAmount = parseEther("0.01");
       const endEpochTx = await writeContractAsync({
         address: wagerAddress,
         abi: wagerAbi,
         functionName: "endEpoch",
-        args: [priceFeedUpdateData as any],
+        args: [betId, priceFeedUpdateData as any],
         value: feeAmount,
       });
 
-      console.log("haa:", endEpochTx);
+      console.log("end of epoch hash:", endEpochTx);
     } catch (err: any) {
       toast.error("Transaction Failed: " + err.message);
       console.log("Transaction Failed: " + err.message);
@@ -90,33 +165,124 @@ export default function Home() {
   };
 
   return (
-    <main>
-      <section className="py-12 flex flex-col items-center text-center gap-8">
-        <div className="flex flex-col items-center justify-center min-h-screen ">
-          <h1 className="text-4xl font-bold mb-4">Morph Wager</h1>
-          <p className="text-xl mb-8">Will the price of ETH exceed $3500?</p>
-          <div className="flex space-x-4 mb-8">
-            <button
-              onClick={() => PlaceBet(true)}
-              className="px-6 py-3 bg-green-500 text-white rounded-lg"
+    <div className="flex flex-col items-center justify-center min-h-screen  p-4">
+      <h1 className="text-2xl font-bold mb-4">ETH Betting Dapp</h1>
+
+      {/* Create Bet Form */}
+
+      <div className=" flex flex-col w-full max-w-3xl  my-8   bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-4">
+        <h2 className="text-xl font-semibold mb-2">Create a New Bet</h2>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(createBet)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="">
+                    <h1 className="text-[#32393A]">Wager title</h1>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-full"
+                      placeholder="abc.."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="threshold"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="">
+                    <h1 className="text-[#32393A]">Threshold</h1>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-full"
+                      placeholder="xyz"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              className="bg-[#007A86] self-center my-8 rounded-full w-full"
+              size="lg"
+              disabled={isConfirming}
+              type="submit"
             >
-              Yes
-            </button>
-            <button
-              onClick={() => PlaceBet(false)}
-              className="px-6 py-3 bg-red-500 text-white rounded-lg"
-            >
-              No
-            </button>
+              {isConfirming ? "Creating a wager..." : "Create a wager"}
+            </Button>
+          </form>
+        </Form>
+      </div>
+
+      {/* <div className="mb-4">
+        <h2 className="text-xl font-semibold">Place a Bet</h2>
+        <input
+          type="number"
+          value={betId}
+          onChange={(e) => setBetId(Number(e.target.value))}
+          placeholder="Bet ID"
+          className="border p-2 mr-2"
+        />
+        <input
+          type="text"
+          value={betAmount}
+          onChange={(e) => setBetAmount(e.target.value)}
+          placeholder="Bet Amount (ETH)"
+          className="border p-2 mr-2"
+        />
+        <select
+          value={betForExceed ? "exceed" : "not-exceed"}
+          onChange={(e) => setBetForExceed(e.target.value === "exceed")}
+          className="border p-2 mr-2"
+        >
+          <option value="exceed">Exceed</option>
+          <option value="not-exceed">Not Exceed</option>
+        </select>
+        <button
+          onClick={() => placeBet(betId, betForExceed, betAmount)}
+          disabled={isConfirming}
+          className="bg-blue-500 text-white p-2 rounded mr-3"
+        >
+          {isConfirming ? "Placing Bet..." : "Place Bet"}
+        </button>
+        <button
+          onClick={() => endEpoch()}
+          className="bg-red-500 text-white p-2 rounded"
+        >
+          End Epoch
+        </button>
+      </div> */}
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">All Bets</h2>
+        {allBets ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allBets.map((bet) => (
+              <BetCard
+                bet={bet}
+                key={bet.id.toString()}
+                onPlaceBet={placeBet}
+                onEndEpoch={endEpoch}
+              />
+            ))}
           </div>
-          <button
-            onClick={endEpoch}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg"
-          >
-            End Epoch
-          </button>
-        </div>
-      </section>
-    </main>
+        ) : (
+          <p>Loading bets...</p>
+        )}
+      </div>
+    </div>
   );
 }
