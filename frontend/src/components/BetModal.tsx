@@ -8,7 +8,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useEffect } from "react";
 
 import { toast } from "sonner";
 import {
@@ -28,14 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MoveLeft } from "lucide-react";
-import { parseUnits } from "viem";
 
 interface BetModalProps {
   children: React.ReactNode;
@@ -60,7 +57,6 @@ const PlaceBetModal = ({ children, onPlaceBet, betId }: BetModalProps) => {
     console.log(data, betId);
     try {
       onPlaceBet(betId, data.betForExceed, data.amount);
-      console.log("b");
     } catch (err: any) {
       toast.error("Transaction Failed: " + err.message);
       console.log("Transaction Failed: " + err.message);
@@ -77,7 +73,7 @@ const PlaceBetModal = ({ children, onPlaceBet, betId }: BetModalProps) => {
               <AlertDialogCancel className="border-none">
                 <MoveLeft size={24} />
               </AlertDialogCancel>
-              <h1>Add a Property</h1>
+              <h1>Make a bet</h1>
             </div>
           </AlertDialogTitle>
         </AlertDialogHeader>
