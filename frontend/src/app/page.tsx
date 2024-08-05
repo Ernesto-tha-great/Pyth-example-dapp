@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { wagerAbi, wagerAddress } from "@/constants";
 import { toast } from "sonner";
-import { parseUnits, parseEther, formatEther } from "viem";
+import { parseEther } from "viem";
 import { EvmPriceServiceConnection } from "@pythnetwork/pyth-evm-js";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +13,6 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
   useReadContract,
-  useAccount,
 } from "wagmi";
 import {
   Form,
@@ -35,13 +34,6 @@ interface BetInfo {
 }
 
 export default function Home() {
-  const { address } = useAccount();
-  const [betId, setBetId] = useState<number>(0);
-  const [betAmount, setBetAmount] = useState<string>("");
-  const [betForExceed, setBetForExceed] = useState<boolean>(true);
-  const [newBetTitle, setNewBetTitle] = useState<string>("");
-  const [newBetThreshold, setNewBetThreshold] = useState<string>("");
-
   const formSchema = z.object({
     title: z.string(),
     threshold: z.string(),
@@ -68,7 +60,7 @@ export default function Home() {
     });
 
   useEffect(() => {
-    if (isConfirming) {
+    if (isPending) {
       toast.loading("Transaction Pending");
     }
     if (isConfirmed) {
@@ -102,6 +94,16 @@ export default function Home() {
       });
 
       console.log("created wager hash:", createBetTx);
+      toast.success("Transaction Successful", {
+        action: {
+          label: "View on Etherscan",
+          onClick: () => {
+            window.open(
+              `https://explorer-holesky.morphl2.io/tx/${createBetTx}`
+            );
+          },
+        },
+      });
     } catch (err: any) {
       toast.error("Transaction Failed: " + err.message);
       console.log("Transaction Failed: " + err.message);
@@ -143,8 +145,6 @@ export default function Home() {
     const priceFeedUpdateData = await connection.getPriceFeedsUpdateData(
       priceIds
     );
-
-    console.log("yoo", priceFeedUpdateData);
 
     try {
       const feeAmount = parseEther("0.01");
@@ -226,45 +226,6 @@ export default function Home() {
           </form>
         </Form>
       </div>
-
-      {/* <div className="mb-4">
-        <h2 className="text-xl font-semibold">Place a Bet</h2>
-        <input
-          type="number"
-          value={betId}
-          onChange={(e) => setBetId(Number(e.target.value))}
-          placeholder="Bet ID"
-          className="border p-2 mr-2"
-        />
-        <input
-          type="text"
-          value={betAmount}
-          onChange={(e) => setBetAmount(e.target.value)}
-          placeholder="Bet Amount (ETH)"
-          className="border p-2 mr-2"
-        />
-        <select
-          value={betForExceed ? "exceed" : "not-exceed"}
-          onChange={(e) => setBetForExceed(e.target.value === "exceed")}
-          className="border p-2 mr-2"
-        >
-          <option value="exceed">Exceed</option>
-          <option value="not-exceed">Not Exceed</option>
-        </select>
-        <button
-          onClick={() => placeBet(betId, betForExceed, betAmount)}
-          disabled={isConfirming}
-          className="bg-blue-500 text-white p-2 rounded mr-3"
-        >
-          {isConfirming ? "Placing Bet..." : "Place Bet"}
-        </button>
-        <button
-          onClick={() => endEpoch()}
-          className="bg-red-500 text-white p-2 rounded"
-        >
-          End Epoch
-        </button>
-      </div> */}
 
       <div className="mb-4">
         <h2 className="text-xl font-semibold">All Bets</h2>
